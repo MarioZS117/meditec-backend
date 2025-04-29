@@ -1,4 +1,5 @@
-import express from 'express';
+import express, { Router } from 'express';
+import { notasRoutes } from './routes/index.js';
  
 const app = express();
 const port = process.env.PORT || 401;
@@ -9,7 +10,8 @@ app.get("/",(req,res)=>{
     res.send("productos corriendo " + port);
 });
 
-app.use("/historiales",createWordDocument);
+app.use("/notas-medicas",notasRoutes
+);
 
 app.listen(port,()=>{
   console.log("Mi primer Servicio de Productos!",port);

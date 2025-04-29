@@ -1,0 +1,1 @@
+export {default as notasRoutes} from './notasRoutes.js';
