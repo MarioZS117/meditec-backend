@@ -1,0 +1,1 @@
+export {default as histoRoutes} from './histoRoutes.js';

@@ -1,13 +1,7 @@
-const express = require('express');
-const histoController = require('../controllers/histoController');
-
+import express from 'express';
 const router = express.Router();
+import { createWordDocument, addCompleteData } from '../controllers/histoController.js';
+router.post('/add-complete-data', addCompleteData);
+router.get('/create-word/:pacienteId', createWordDocument);
 
-// Define routes and connect them to the controller
-router.get('/', histoController.getAllHistoriales);
-router.get('/:id', histoController.getHistorialById);
-router.post('/', histoController.createHistorial);
-router.put('/:id', histoController.updateHistorial);
-router.delete('/:id', histoController.deleteHistorial);
-
-module.exports = router;
+export default router;
