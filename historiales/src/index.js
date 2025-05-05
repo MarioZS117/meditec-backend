@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import {histoRoutes} from './routes/index.js';
  
 const app = express();
-const port = process.env.PORT || 400;
+const port = process.env.PORT || 3001;
 app.use(express.json());
 
 

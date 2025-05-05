@@ -1,0 +1,1 @@
+export {default as medicosRoutes} from './medicosRoutes.js';

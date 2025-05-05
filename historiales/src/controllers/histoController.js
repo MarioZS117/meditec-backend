@@ -6,6 +6,73 @@ import expressions from "docxtemplater/expressions.js"; // <<--- Agregado
 import { getConnection } from "../models/connectionMongo.js"; 
 import { ObjectId } from "mongodb";
 
+export const getResumenHistoriaClinica = async (req, res) => {
+  try {
+    // Obtener el ID del paciente desde los parámetros
+    const { pacienteId } = req.params;
+
+    // Validar que se haya proporcionado un ID
+    if (!pacienteId) {
+      return res.status(400).json({ message: "El ID del paciente es requerido" });
+    }
+
+    const database = await getConnection();
+
+    // Buscar los datos en las colecciones correspondientes
+    const paciente = await database.collection('pacientes').findOne({ _id: new ObjectId(pacienteId) });
+    const antecedentes = await database.collection('antecedentes').findOne({ pacienteId: new ObjectId(pacienteId) });
+    const exploracionFisica = await database.collection('exploracionFisica').findOne({ pacienteId: new ObjectId(pacienteId) });
+    const diagnostico = await database.collection('diagnosticos').findOne({ pacienteId: new ObjectId(pacienteId) });
+    const tratamiento = await database.collection('tratamientos').findOne({ pacienteId: new ObjectId(pacienteId) });
+    const notasEvolucion = await database.collection('notasEvolucion').findOne({ pacienteId: new ObjectId(pacienteId) });
+
+    // Validar que el paciente exista
+    if (!paciente) {
+      return res.status(404).json({ message: "Paciente no encontrado" });
+    }
+
+    // Crear el resumen de la historia clínica
+    const resumen = {
+      datosPaciente: {
+        nombre: paciente.nombre || "N/A",
+        edad: paciente.edad || "N/A",
+        sexo: paciente.sexo || "N/A",
+        estadoCivil: paciente.estadoCivil || "N/A",
+        ocupacion: paciente.ocupacion || "N/A",
+        domicilio: paciente.domicilio || "N/A",
+        telefono: paciente.telefono || "N/A",
+        fechaNacimiento: paciente.fechaNacimiento || "N/A",
+        lugarNacimiento: paciente.lugarNacimiento || "N/A"
+      },
+      antecedentes: {
+        patologicos: antecedentes?.patologicos || "N/A",
+        alergicos: antecedentes?.alergicos || "N/A",
+        quirurgicos: antecedentes?.quirurgicos || "N/A",
+        traumatismos: antecedentes?.traumatismos || "N/A",
+        transfusionales: antecedentes?.transfusionales || "N/A",
+        familiares: antecedentes?.familiares || "N/A"
+      },
+      exploracionFisica: {
+        general: exploracionFisica?.general || "N/A",
+        cabeza: exploracionFisica?.cabeza || "N/A",
+        cuello: exploracionFisica?.cuello || "N/A",
+        torax: exploracionFisica?.torax || "N/A",
+        abdomen: exploracionFisica?.abdomen || "N/A",
+        extremidades: exploracionFisica?.extremidades || "N/A"
+      },
+      diagnostico: diagnostico?.descripcion || "N/A",
+      tratamiento: tratamiento?.indicaciones || "N/A",
+      notasEvolucion: notasEvolucion?.descripcion || "N/A"
+    };
+
+    // Enviar el resumen como respuesta
+    res.status(200).json({ message: "Resumen de la historia clínica obtenido correctamente", resumen });
+  } catch (error) {
+    console.error("Error en getResumenHistoriaClinica", error);
+    res.status(500).json({ message: "Error al obtener el resumen de la historia clínica", error: error.message });
+  }
+};
+
 // Función para sanear nombres de archivo
 const sanitizeFileName = (name) => {
   return name
@@ -25,53 +92,118 @@ const getFormattedDate = () => {
   return `${day}/${month}/${year}`;
 };
 
-export const addCompleteData = async (req, res) => {
+//import { getConnection } from "../models/connectionMongo.js";
+//import { ObjectId } from "mongodb";
+
+// Ruta para agregar datos del paciente
+export const addPaciente = async (req, res) => {
   try {
-    const { paciente, signosVitales, antecedentes, exploracionFisica, diagnostico, tratamiento, notasEvolucion, medico } = req.body;
+    console.log("Datos recibidos:", req.body);
 
-    // Validar que al menos los datos del paciente estén presentes
-    if (!paciente || Object.keys(paciente).length === 0) {
-      return res.status(400).json({ message: "Los datos del paciente son requeridos" });
-    }
-
+    const paciente = req.body;
     const database = await getConnection();
-
-    // Insertar los datos en sus respectivas colecciones
-    const pacienteResult = await database.collection('pacientes').insertOne(paciente);
-    const pacienteId = pacienteResult.insertedId; // Obtener el ID del paciente insertado
-
-    if (signosVitales) {
-      await database.collection('signosVitales').insertOne({ ...signosVitales, pacienteId });
-    }
-
-    if (antecedentes) {
-      await database.collection('antecedentes').insertOne({ ...antecedentes, pacienteId });
-    }
-
-    if (exploracionFisica) {
-      await database.collection('exploracionFisica').insertOne({ ...exploracionFisica, pacienteId });
-    }
-
-    if (diagnostico) {
-      await database.collection('diagnosticos').insertOne({ ...diagnostico, pacienteId });
-    }
-
-    if (tratamiento) {
-      await database.collection('tratamientos').insertOne({ ...tratamiento, pacienteId });
-    }
-
-    if (notasEvolucion) {
-      await database.collection('notasEvolucion').insertOne({ ...notasEvolucion, pacienteId });
-    }
-
-    if (medico) {
-      await database.collection('medicos').insertOne({ ...medico, pacienteId });
-    }
-
-    res.status(201).json({ message: "Datos completos agregados correctamente", pacienteId });
+    const result = await database.collection('pacientes').insertOne(paciente);
+    console.log("Paciente agregado", result);
+    res.status(201).json({ message: "Paciente agregado correctamente", result });
   } catch (error) {
-    console.error("Error en addCompleteData", error);
-    res.status(500).json({ message: "Error al agregar datos completos", error: error.message });
+    console.error("Error en addPacientes", error);
+    res.status(500).json({ message: "Error al agregar paciente", error: error.message });
+  }
+};
+
+// Ruta para agregar antecedentes
+export const addAntecedentes = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const antecedentes = req.body;
+    const database = await getConnection();
+    const result = await database.collection('antecedentes').insertOne(antecedentes);
+    console.log("Antecedentes agregados", result);
+    res.status(201).json({ message: "Antecedentes agregados correctamente", result });
+  } catch (error) {
+    console.error("Error en addAntecedentes", error);
+    res.status(500).json({ message: "Error al agregar antecedentes", error: error.message });
+  }
+};
+
+// Ruta para agregar exploración física
+export const addExploracionFisica = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const exploracionFisica = req.body;
+    const database = await getConnection();
+    const result = await database.collection('exploracionFisica').insertOne(exploracionFisica);
+    console.log("Exploración física agregada", result);
+    res.status(201).json({ message: "Exploración física agregada correctamente", result });
+  } catch (error) {
+    console.error("Error en addExploracionFisica", error);
+    res.status(500).json({ message: "Error al agregar exploración física", error: error.message });
+  }
+};
+
+// Ruta para agregar diagnóstico
+export const addDiagnostico = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const diagnostico = req.body;
+    const database = await getConnection();
+    const result = await database.collection('diagnosticos').insertOne(diagnostico);
+    console.log("Diagnóstico agregado", result);
+    res.status(201).json({ message: "Diagnóstico agregado correctamente", result });
+  } catch (error) {
+    console.error("Error en addDiagnostico", error);
+    res.status(500).json({ message: "Error al agregar diagnóstico", error: error.message });
+  }
+};
+
+// Ruta para agregar tratamiento
+export const addTratamiento = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const tratamiento = req.body;
+    const database = await getConnection();
+    const result = await database.collection('tratamientos').insertOne(tratamiento);
+    console.log("Tratamiento agregado", result);
+    res.status(201).json({ message: "Tratamiento agregado correctamente", result });
+  } catch (error) {
+    console.error("Error en addTratamiento", error);
+    res.status(500).json({ message: "Error al agregar tratamiento", error: error.message });
+  }
+};
+
+// Ruta para agregar notas de evolución
+export const addNotasEvolucion = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const notasEvolucion = req.body;
+    const database = await getConnection();
+    const result = await database.collection('notasEvolucion').insertOne(notasEvolucion);
+    console.log("Notas de evolución agregadas", result);
+    res.status(201).json({ message: "Notas de evolución agregadas correctamente", result });
+  } catch (error) {
+    console.error("Error en addNotasEvolucion", error);
+    res.status(500).json({ message: "Error al agregar notas de evolución", error: error.message });
+  }
+};
+
+// Ruta para agregar datos del médico
+export const addMedico = async (req, res) => {
+  try {
+    console.log("Datos recibidos:", req.body);
+
+    const medico = req.body;
+    const database = await getConnection();
+    const result = await database.collection('medicos').insertOne(medico);
+    console.log("Datos del médico agregados", result);
+    res.status(201).json({ message: "Datos del médico agregados correctamente", result });
+  } catch (error) {
+    console.error("Error en addMedico", error);
+    res.status(500).json({ message: "Error al agregar datos del médico", error: error.message });
   }
 };
 export const createWordDocument = async (req, res) => {
@@ -86,7 +218,6 @@ export const createWordDocument = async (req, res) => {
 
     const database = await getConnection();
     const paciente = await database.collection('pacientes').findOne({ _id: new ObjectId(pacienteId) });
-    const signosVitales = await database.collection('signosVitales').findOne({ pacienteId: new ObjectId(pacienteId) });
     const antecedentes = await database.collection('antecedentes').findOne({ pacienteId: new ObjectId(pacienteId) });
     const exploracionFisica = await database.collection('exploracionFisica').findOne({ pacienteId: new ObjectId(pacienteId) });
     const diagnostico = await database.collection('diagnosticos').findOne({ pacienteId: new ObjectId(pacienteId) });
@@ -125,24 +256,13 @@ export const createWordDocument = async (req, res) => {
       },
       datosPaciente: {
         nombre: paciente.nombre || "N/A",
-        edad: paciente.edad || "N/A",
-        sexo: paciente.sexo || "N/A",
-        estadoCivil: paciente.estadoCivil || "N/A",
+        diaNacimiento: paciente.edad || "N/A",
+        genero: paciente.genero || "N/A",
         ocupacion: paciente.ocupacion || "N/A",
-        domicilio: paciente.domicilio || "N/A",
         telefono: paciente.telefono || "N/A",
-        fechaNacimiento: paciente.fechaNacimiento || "N/A",
-        lugarNacimiento: paciente.lugarNacimiento || "N/A"
-      },
-      signosVitales:{
-        fecha: getFormattedDate(),
-        presionArterial: signosVitales.presionArterial || "N/A",
-        frecuenciaCardiaca: signosVitales.frecuenciaCardiaca ||  "N/A",
-        frecuenciaRespiratoria: signosVitales.frecuenciaRespiratoria|| "N/A",
-        temperatura: signosVitales.temperatura|| "N/A",
-        peso: signosVitales.peso || "N/A",
-        talla: signosVitales.talla ||"N/A",
-        imc: signosVitales.imc|| "N/A"
+        email: paciente.email || "N/A",
+        direccion: paciente.direccion || "N/A",
+        contactoEmergencia: paciente.contactoEmergencia || "N/A",
       },
       antecedentes:  {
         patologicos: antecedentes.patologicos || "N/A",
